@@ -5,7 +5,7 @@ to version 0.7
 """
 
 __author__ = "Joseph Lee - EPCC (j.lee@epcc.ed.ac.uk)"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __license__ = "MIT"
 
 import argparse
@@ -14,20 +14,24 @@ import re
 
 def replace_instruction(line, linenum, verbosity):
     newline = line
-    if "_zve32f1p0_zve32x1p0_zvl32b1p0" in line:
-        if verbosity > 0:
-            print("Line number: {LINENUM}".format(LINENUM=linenum))
-            print("original = " + line)
-        newline = line.replace("_zve32f1p0_zve32x1p0_zvl32b1p0", "_v0p7")
-        if verbosity > 0:
-            print("updated  = " + newline)
-            print("=========================================================")
+    line_changed = False
 
-        return newline
+    v_one_attribute_list = ["_v1p0","_zve32f1p0","_zve32x1p0","_zve64d1p0","_zve64f1p0","_zve64x1p0","_zvl128b1p0","_zvl32b1p0","_zvl64b1p0"]
+    v_pseven_attribute_added = False
+    for attribute in v_one_attribute_list:
+        if attribute in newline:
+            newline = newline.replace(attribute, '')
+            line_changed = True
+            if not v_pseven_attribute_added:
+                newline = newline.replace("\"\n", "_v0p7\"\n")
+                v_pseven_attribute_added = True
+
+
+
 
     
 
-    dict_load_store_misc = {
+    opcode_name_change_dict = {
         "vle32.v"    : "vlw.v",
         "vle16.v"    : "vlh.v",
         "vle8.v"     : "vlb.v",
@@ -56,178 +60,172 @@ def replace_instruction(line, linenum, verbosity):
         "vfncvt.x.f.w": "vfncvt.x.f.v",
         "vfncvt.f.xu.w": "vfncvt.f.xu.v",
         "vfncvt.f.x.w": "vfncvt.f.x.v",
-        "vfncvt.f.f.w": "vfncvt.f.f.v"
+        "vfncvt.f.f.w": "vfncvt.f.f.v",
+        "vfredusum": "vfredsum",
+        "vnclip.wv": "vnclip.vv",
+        "vnclip.wx": "vnclip.vx",
+        "vnclip.wi": "vnclip.vi",
+        "vnclipu.wv": "vnclipu.vv",
+        "vnclipu.wx": "vnclipu.vx",
+        "vnclipu.wi": "vnclipu.vi",
+        "vmandn.mm" : "vmandnot.mm",
+        "vmorn.mm" : "vmornot.mm",
+        "vmmv.m" : "vmcpy.m",
+        "vmpopc.m" : "vcpopc.m",
+        "vfirst.m" : "vmfirst.m"
     }
 
-    for key in dict_load_store_misc:
+    for key in opcode_name_change_dict:
         if (line.__contains__(key)):
-            if verbosity > 0:
-                print("Line number: {LINENUM}".format(LINENUM=linenum))
-                print("original = " + line)
-            newline = line.replace(key, dict_load_store_misc[key])
-            if verbosity > 0:
-                print("updated  = " + newline)
-                print("=========================================================")
-            return newline
-
+            line_changed = True
+            newline = line.replace(key, opcode_name_change_dict[key])
 
         
+    
+    
+    whole_register_list = ["vl1r.v", "vl1re8.v", "vl1re16.v", "vl1re32", "vl1re64",
+                           "vl2r.v", "vl2re8.v", "vl2re16.v", "vl2re32", "vl2re64",
+                           "vl4r.v", "vl4re8.v", "vl4re16.v", "vl4re32", "vl4re64",
+                           "vl8r.v", "vl8re8.v", "vl8re16.v", "vl8re32", "vl8re64",
+                           "vs1r.v", "vs1re8.v", "vs1re16.v", "vs1re32", "vs1re64",
+                           "vs2r.v", "vs2re8.v", "vs2re16.v", "vs2re32", "vs2re64",
+                           "vs4r.v", "vs4re8.v", "vs4re16.v", "vs4re32", "vs4re64",
+                           "vs8r.v", "vs8re8.v", "vs8re16.v", "vs8re32  ", "vs8re64",
+                           "vmv1r.v", "vmv2r.v", "vmv4r.v", "vmv8r.v"]
+
+    # WHOLE REGISTER LOAD/STORE/COPY:
+    if any(word in line for word in whole_register_list):
+        line_changed = True
+        instruction = re.split(r"[, \t]+", line.lstrip())
+        rd = instruction[1]
+        rs = instruction[2]
+        if (instruction[3]):
+            vm = instruction[3]
+        else:
+            vm = ""
+        newline = "# Replacing Line: {LINENUM} - {LINE}".format(
+                    LINENUM=linenum, LINE=line)
+        newline += "\tsd     t0, 0(sp)\n"
+        newline += "\tsd     t1, 8(sp)\n"
+        newline += "\tcsrr     t0, vl\n"
+        newline += "\tcsrr     t1, vtype\n"
+        match instruction[0]:
+            case 'vl1r.v' | 'vl1re8.v' | 'vl1re16.v' | 'vl1re32' | 'vl1re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vl2r.v' | 'vl2re8.v' | 'vl2re16.v' | 'vl2re32' | 'vl2re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vl4r.v' | 'vl4re8.v' | 'vl4re16.v' | 'vl4re32' | 'vl4re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vl8r.v' | 'vl8re8.v' | 'vl8re16.v' | 'vl8re32' | 'vl8re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vs1r.v' | 'vs1re8.v' | 'vs1re16.v' | 'vs1re32' | 'vs1re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vs2r.v' | 'vs2re8.v' | 'vs2re16.v' | 'vs2re32' | 'vs2re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vs4r.v' | 'vs4re8.v' | 'vs4re16.v' | 'vs4re32' | 'vs4re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vs8r.v' | 'vs8re8.v' | 'vs8re16.v' | 'vs8re32' | 'vs8re64':
+                temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
+                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vmv1r.v':
+                temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
+                temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vmv2r.v':
+                temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
+                temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vmv4r.v':
+                temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
+                temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+            case 'vmv8r.v':
+                temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
+                temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
+                    RD=rd, RS=rs, VM=(","+vm))
+        newline += temp_vset
+        newline += temp_vinstr
+        newline += "\tvsetvl   x0, t0, t1\n"
+        newline += "\tld     t0, 0(sp)\n"
+        newline += "\tld     t1, 8(sp)\n"
+
+        suggestion = "# Replacing Line: {LINENUM} - {LINE}\n".format(
+            LINENUM=linenum, LINE=line)
+        suggestion += "# Suggestion\n"
+        suggestion += "# Pick 2 unused register e.g. t0, t1\n"
+        suggestion += "#\tcsrr     t0, vl\t\t(may be unnecessary) \n"
+        suggestion += "#\tcsrr     t1, vtype\t\t(may be unnecessary) \n"
+        suggestion += "#"+temp_vset
+        suggestion += "#"+temp_vinstr
+        suggestion += "#\tvsetvl   x0, t0, t1\t\t(may be unnecessary) \n"
+        newline += suggestion
+
+        print("WARNING: replaced Line {LINENUM} : {LINE}".format(
+            LINENUM=linenum, LINE=line))
+        print("WARNING: Add -v to see suggestion (Also in output file)")
+
     change_instruction_list = ["vsetvl", "vsetvli", "vsetivli",
-                               "vl1r.v", "vl1re8.v", "vl1re16.v", "vl1re32", "vl1re64",
-                               "vl2r.v", "vl2re8.v", "vl2re16.v", "vl2re32", "vl2re64",
-                               "vl4r.v", "vl4re8.v", "vl4re16.v", "vl4re32", "vl4re64",
-                               "vl8r.v", "vl8re8.v", "vl8re16.v", "vl8re32", "vl8re64",
-                               "vs1r.v", "vs1re8.v", "vs1re16.v", "vs1re32", "vs1re64",
-                               "vs2r.v", "vs2re8.v", "vs2re16.v", "vs2re32", "vs2re64",
-                               "vs4r.v", "vs4re8.v", "vs4re16.v", "vs4re32", "vs4re64",
-                               "vs8r.v", "vs8re8.v", "vs8re16.v", "vs8re32  ", "vs8re64",
                                "vzext.vf2", "vzext.vf4", "vzext.vf8",
                                "vsext.vf2", "vsext.vf4", "vsext.vf8"]
-    
+    # Change other miscellaneous instruction
     if any(word in line for word in change_instruction_list):
-        if verbosity > 0:
-            print("Line number: {LINENUM}".format(LINENUM=linenum))
-            print("original = " + line)
+        line_changed = True
         instruction = re.split(r"[, \t]+", line.lstrip())
         
 
         match instruction[0]:
             # ===========================================================
             # VECTOR CONFIGURATION
-            case "vsetvl" | "vsetvli":
+            case "vsetvl":
                 # disable tail/mask agnostic policy
-                newline = line.replace("ta", "#ta")
-                newline = newline.replace("tu", "#tu")
-            case 'vsetivli':  # vsetivli rd, uimm, vtypei, tflag, mflag # rd = new vl, uimm = AVL (requested vector length), vtypei = new vtype setting
-                rd  = instruction[1]
-                avl = instruction[2]
-                vtype = instruction[3]
-                mtype = instruction[4]
-                # safer copy temporary register t0 to memory
-                """ line = ("sd     t0, 0(sp)\n" +  # copy temporary register t0 to stack
-                        "addi   t0, {AVL}\n" +  # use t0 to store intermediate val
-                        "vsetvli  {RD}, t0, {VTYPE}, {MTYPE}\n" + # configure vector
-                        "ld     t0, 0(sp)\n")  # copy from stack back to t0
-                newline = line.format(AVL = avl, RD = rd, VTYPE = vtype, MTYPE = mtype) """
-                # unsafe use t0
-                newline = ("\taddi   t0, {AVL}\n" +
-                        "\tvsetvli  {RD}, t0, {VTYPE}, {MTYPE}\n")
-                newline = newline.format(
-                    AVL=avl, RD=rd, VTYPE=vtype, MTYPE=mtype)
-            # ===========================================================
+                newline = line.replace(", ta", "").replace(", tu", "").replace(", ma", "").replace(", mu", "")
+            case "vsetvli":
+                # disable tail/mask agnostic policy
+                newline = line.replace(", ta", "").replace(", tu", "").replace(", ma", "").replace(", mu", "")
+                fractional_LMUL = ["mf2", "mf4", "mf8"]
+                if any(fLMUL in line for fLMUL in fractional_LMUL):
+                    print(
+                        "ERROR: Line number: {LINENUM} - Fractional LMUL".format(LINENUM=linenum))
+            case 'vsetivli':  
+                fractional_LMUL = ["mf2", "mf4", "mf8"]
+                if any(fLMUL in line for fLMUL in fractional_LMUL):
+                    print(
+                        "ERROR: Line number: {LINENUM} - Fractional LMUL".format(LINENUM=linenum))
+                AVL = instruction[2]
+                newline = "# Replacing Line: {LINENUM} - {LINE}".format(
+                    LINENUM=linenum, LINE=line)
+                newline +=  "\tsd     t0, 0(sp)\t  # rvv-rollback\n"
+                newline += "\taddi   t0, " + AVL +  " # rvv-rollback\n"
+                temp =line.replace(", ta", "").replace(
+                    ", tu", "").replace(", ma", "").replace(", mu", "").replace(AVL, "t0").replace("vsetivli", "vsetvli").replace("\n","")
+                newline += temp + " # rvv-rollback\n"
+                newline += "\tld     t0, 0(sp)\t  # rvv-rollback\n"
+                suggestion = "# Replacing Line: {LINENUM} - {LINE}".format(
+                    LINENUM=linenum, LINE=line)
+                suggestion += "# Suggestion\n"
+                suggestion += "# Pick unused register e.g. t0\n"
+                suggestion += "#\taddi   t0, " + AVL + '\n'
+                suggestion += "# " + temp + '\n'
+                newline += suggestion
 
+                print("WARNING: replaced Line {LINENUM} : {LINE}".format(LINENUM=linenum, LINE=line))
+                print("WARNING: Add -v to see suggestion (Also in output file)")
 
-            # WHOLE REGISTER LOAD/STORE: Currently do not backup t0, t1 before using, unsafe
-            case 'vl1r.v' | 'vl1re8.v' | 'vl1re16.v' | 'vl1re32' | 'vl1re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if(instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m1\n" +  # Set LMUL = 1
-                        "\tvlw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = newline.format(RD=rd, RS=rs, VM=(","+vm))
-            case 'vl2r.v' | 'vl2re8.v' | 'vl2re16.v' | 'vl2re32' | 'vl2re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if (instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m2\n" +  # Set LMUL = 2
-                        "\tvlw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = line.format(RD=rd, RS=rs, VM=(","+vm))
-
-            case 'vl4r.v' | 'vl4re8.v' | 'vl4re16.v' | 'vl4re32' | 'vl4re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if (instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m4\n" +  # Set LMUL = 4
-                        "\tvlw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = newline.format(RD=rd, RS=rs, VM=(","+vm))
-
-            case 'vl8r.v' | 'vl8re8.v' | 'vl8re16.v' | 'vl8re32' | 'vl8re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if (instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m8\n" +  # Set LMUL = 8
-                        "\tvlw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = newline.format(RD=rd, RS=rs, VM=(","+vm))
-
-            case 'vs1r.v' | 'vs1re8.v' | 'vs1re16.v' | 'vs1re32' | 'vs1re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if (instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m1\n" +  # Set LMUL = 1
-                        "\tvsw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = newline.format(RD=rd, RS=rs, VM=(","+vm))
-
-            case 'vs2r.v' | 'vs2re8.v' | 'vs2re16.v' | 'vs2re32' | 'vs2re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if (instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m2\n" +  # Set LMUL = 2
-                        "\tvsw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = newline.format(RD=rd, RS=rs, VM=(","+vm))
-
-            case 'vs4r.v' | 'vs4re8.v' | 'vs4re16.v' | 'vs4re32' | 'vs4re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if (instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m4\n" +  # Set LMUL = 4
-                        "\tvsw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = newline.format(RD=rd, RS=rs, VM=(","+vm))
-
-            case 'vs8r.v' | 'vs8re8.v' | 'vs8re16.v' | 'vs8re32' | 'vs8re64':
-                rd = instruction[1]
-                rs = instruction[2]
-                if (instruction[3]):
-                    vm = instruction[3]
-                else:
-                    vm = ""
-                newline = ("\tcsrr     t0, vl\n" +
-                        "\tcsrr     t1, vtype\n" +
-                        "\tvsetvli  x0, x0, e32, m8\n" +  # Set LMUL = 8
-                        "\tvsw.v    {RD}, {RS} {VM}\n" +
-                        "\tvsetvl   x0, t0, t1\n")
-                newline = newline.format(RD=rd, RS=rs, VM=(","+vm))
 
             # ===========================================================
 
@@ -295,9 +293,13 @@ def replace_instruction(line, linenum, verbosity):
                         "\tvwadd.vx, {VD}, {VD},  x0 {VM}\n" +
                         "\tvwadd.vx, {VD}, {VD},  x0 {VM}\n")  # signed widening add zero three times
                 newline = newline.format(VD=vd, VS2=vs2, VM=(","+vm))
-        if verbosity > 0:
-            print("updated  = " + newline)
-            print("=========================================================")
+
+
+    if verbosity > 0 and line_changed == True:
+        print("Line number: {LINENUM}".format(LINENUM=linenum))
+        print("original = " + line)
+        print("updated  = " + newline)
+        print("=========================================================")
 
     return newline
         
@@ -313,7 +315,7 @@ def main(args):
     else:
         outfilename = filename.replace(".s", "-rvv0p7.s")
 
-    print("input file = {IN}  |  output file = {OUT}".format(IN=filename, OUT=outfilename))
+    print("input file = {IN}  |  output file = {OUT}\n".format(IN=filename, OUT=outfilename))
 
     file = open(filename, 'r')
     outfile = open(outfilename, 'w')
