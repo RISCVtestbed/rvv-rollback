@@ -5,7 +5,7 @@ to version 0.7
 """
 
 __author__ = "Joseph Lee - EPCC (j.lee@epcc.ed.ac.uk)"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __license__ = "MIT"
 
 import argparse
@@ -62,6 +62,7 @@ def replace_instruction(line, linenum, verbosity):
         "vfncvt.f.x.w": "vfncvt.f.x.v",
         "vfncvt.f.f.w": "vfncvt.f.f.v",
         "vfredusum": "vfredsum",
+        "vfwredusum.vs":"vfwredsum.vs",
         "vnclip.wv": "vnclip.vv",
         "vnclip.wx": "vnclip.vx",
         "vnclip.wi": "vnclip.vi",

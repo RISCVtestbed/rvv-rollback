@@ -15,13 +15,15 @@ To use this python tool we recommend installing the following:
 1. `clang` with RISC-V support. This requires building a riscv-gnu-toolchain first, and [this PR](https://github.com/riscv-collab/riscv-gnu-toolchain/pull/1166) provides the easiest path to build them together;
 2. `gcc` with RVV 0.7 support. Upstream GNU toolchain does not support this; a few older/custom toolchains do provide support. We recommend using `gcc 10.2` from <https://occ.t-head.cn/community/download?id=4090445921563774976>. This version supports both RVV0.7 and RVV1.0, and can be switched with the flag `-march=rv64gcv0p7` or `-march=rv64gcv1p0`.
 
-Both of these are installed on the [EPCC RISC-V testbed](http://riscv.epcc.ed.ac.uk/) login nodes.
-
 
 Other toolchains which support RVV0.7:
 
 - <https://github.com/brucehoult/riscv-gnu-toolchain/tree/rvv-0.7.1> is a clone of the deprecated rvv-0.7.1 branch of the riscv-gnu-toolchain
 - <https://occ.t-head.cn/community/download?id=3927429448189939712> is a gcc8.4 toolchain supplied for C9XX CPU. From testing it has superior auto-vectorization performance when run on C906 hardware, and provides good comparison for other compilers.
+
+These toolchains are available for download on the [EPCC RISC-V testbed website](http://riscv.epcc.ed.ac.uk/), and are installed on the login nodes.
+
+
 
 ## Usage
 The first step is to compile the CPP file into RVV1.0 assembly:
