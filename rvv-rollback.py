@@ -5,7 +5,7 @@ to version 0.7
 """
 
 __author__ = "Joseph Lee - EPCC (j.lee@epcc.ed.ac.uk)"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __license__ = "MIT"
 
 import argparse
@@ -32,6 +32,7 @@ def replace_instruction(line, linenum, verbosity):
     
 
     opcode_name_change_dict = {
+        # V1.0 -> V0.7
         "vle32.v"    : "vlw.v",
         "vle16.v"    : "vlh.v",
         "vle8.v"     : "vlb.v",
@@ -56,6 +57,10 @@ def replace_instruction(line, linenum, verbosity):
         "vsoxei32.v" : "vsxw.v",
         "vsoxei16.v" : "vsxh.v",
         "vsoxei8.v"  : "vsxb.v",
+        "vloxseg1e8.v" "vlxseg1b.v"
+        "vluxseg1e8.v" "vlxseg1b.v"
+        "vsoxseg1e8.v" "vsxseg1b.v"
+        "vsuxseg1e8.v" "vsxseg1b.v"
         "vfncvt.xu.f.w": "vfncvt.xu.f.v",
         "vfncvt.x.f.w": "vfncvt.x.f.v",
         "vfncvt.f.xu.w": "vfncvt.f.xu.v",
@@ -69,11 +74,18 @@ def replace_instruction(line, linenum, verbosity):
         "vnclipu.wv": "vnclipu.vv",
         "vnclipu.wx": "vnclipu.vx",
         "vnclipu.wi": "vnclipu.vi",
+        "vnsra.wv" : "vnsra.vv",
+        "vnsra.wx" : "vnsra.vx",
+        "vnsra.wi" : "vnsra.vi",
+        "vnsrl.wv" : "vnsrl.vv",
+        "vnsrl.wx" : "vnsrl.vx",
+        "vnsrl.wi" : "vnsrl.vi",
         "vmandn.mm" : "vmandnot.mm",
         "vmorn.mm" : "vmornot.mm",
         "vmmv.m" : "vmcpy.m",
-        "vmpopc.m" : "vcpopc.m",
-        "vfirst.m" : "vmfirst.m"
+        "vcpopc.m" : "vmpopc.m",
+        "vpopc.m" : "vmpopc.m",
+        "vfirst.m" : "vmfirst.m",
     }
 
     for key in opcode_name_change_dict:
