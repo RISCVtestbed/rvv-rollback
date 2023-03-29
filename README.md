@@ -28,11 +28,11 @@ These toolchains are available for download on the [EPCC RISC-V testbed website]
 ## Usage
 The first step is to compile the CPP file into RVV1.0 assembly:
 ```
-$ <riscv-toolchain-installdir>/bin/clang++ -no-integrated-as -march=rv64gczve32f  -menable-experimental-extensions -mllvm --riscv-v-vector-bits-min=128 -O3 -S -o <filename.s> -c <inputfile.cpp>
+$ <riscv-toolchain-installdir>/bin/clang++ -no-integrated-as -march=rv64gcv  -menable-experimental-extensions -mllvm --riscv-v-vector-bits-min=128 -O3 -S -o <filename.s> -c <inputfile.cpp>
 ```
 
 - `-no-ingrated-as` turns off the integrated assembler and ensures we can use the gnu assembler in the subsequent step.
-- `-march=rv64gczve32f  -menable-experimental-extensions -mllvm --riscv-v-vector-bits-min=128 -O3`: these flags turn on auto-vectorization. In particular, `zve32f` is a subset of the `V` extension which supports vector element size up to 32-bit floats, which is the maximum for the C906 CPU.
+- `-march=rv64gcv  -menable-experimental-extensions -mllvm --riscv-v-vector-bits-min=128 -O3`: these flags turn on auto-vectorization. To force the code to emit only 32 bit element for vectors (which is the maximum for the C906 CPU), `v` can be replaced by `zve32f`, which is a subset of the `V` extension supporting element size up to 32-bit for embedded processors. However this might reduce the vectorization.
   
 
 Next we use the `rvv-rollback.py` tool to translate the RVV1.0 assembly to RVV0.7 assembly
@@ -40,7 +40,7 @@ Next we use the `rvv-rollback.py` tool to translate the RVV1.0 assembly to RVV0.
 $ python3 rvv-rollback.py <filename.s> (optional: -o <outfilename.s>) (optional: -v)
 ```
 
-- This script also changes the `arch` attribute of the assembly from `XXX_zve32f1p0_zve32x1p0_zvl32b1p0` to `XXX_v0p7`.
+- This script also changes the `arch` attribute of the assembly to `XXX_v0p7`.
 - Given the input `<filename.s>` the default output name will be `<filename-rvv0p7.s>` unless the optional `<outfilename.s>` argument is provided.
 - Including the verbosity flag `-v` will print out the changed lines.
 
