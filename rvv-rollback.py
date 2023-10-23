@@ -112,10 +112,10 @@ def replace_instruction(line, linenum, verbosity):
         instruction = re.split(r"[, \t]+", line.lstrip())
         rd = instruction[1]
         rs = instruction[2]
-        if (instruction[3]):
-            vm = instruction[3]
-        else:
+        if (len(instruction) <= 3):
             vm = ""
+        elif (instruction[3]):
+            vm = instruction[3]
         newline = "# Replacing Line: {LINENUM} - {LINE}".format(
                     LINENUM=linenum, LINE=line)
         newline += "\tsd     t0, 0(sp)\n"
