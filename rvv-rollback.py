@@ -112,16 +112,18 @@ def replace_instruction(line, linenum, verbosity):
         instruction = re.split(r"[, \t]+", line.lstrip())
         rd = instruction[1]
         rs = instruction[2]
-        if (instruction[3]):
-            vm = instruction[3]
-        else:
+        if (len(instruction) <= 3):
             vm = ""
+        elif (instruction[3]):
+            vm = instruction[3]
         newline = "# Replacing Line: {LINENUM} - {LINE}".format(
                     LINENUM=linenum, LINE=line)
         newline += "\tsd     t0, 0(sp)\n"
         newline += "\tsd     t1, 8(sp)\n"
         newline += "\tcsrr     t0, vl\n"
         newline += "\tcsrr     t1, vtype\n"
+        temp_vset = ""
+        temp_vinstr = ""
         match instruction[0]:
             case 'vl1r.v' | 'vl1re8.v' | 'vl1re16.v' | 'vl1re32' | 'vl1re64':
                 temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
