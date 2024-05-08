@@ -100,10 +100,7 @@ def replace_instruction(line, linenum, verbosity):
                            "vl2r.v", "vl2re8.v", "vl2re16.v", "vl2re32", "vl2re64",
                            "vl4r.v", "vl4re8.v", "vl4re16.v", "vl4re32", "vl4re64",
                            "vl8r.v", "vl8re8.v", "vl8re16.v", "vl8re32", "vl8re64",
-                           "vs1r.v", "vs1re8.v", "vs1re16.v", "vs1re32", "vs1re64",
-                           "vs2r.v", "vs2re8.v", "vs2re16.v", "vs2re32", "vs2re64",
-                           "vs4r.v", "vs4re8.v", "vs4re16.v", "vs4re32", "vs4re64",
-                           "vs8r.v", "vs8re8.v", "vs8re16.v", "vs8re32  ", "vs8re64",
+                           "vs1r.v", "vs2r.v","vs4r.v", "vs8r.v", 
                            "vmv1r.v", "vmv2r.v", "vmv4r.v", "vmv8r.v"]
 
     # WHOLE REGISTER LOAD/STORE/COPY:
@@ -141,21 +138,21 @@ def replace_instruction(line, linenum, verbosity):
                 temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=(","+vm))
-            case 'vs1r.v' | 'vs1re8.v' | 'vs1re16.v' | 'vs1re32' | 'vs1re64':
+            case 'vs1r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
-                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=(","+vm))
-            case 'vs2r.v' | 'vs2re8.v' | 'vs2re16.v' | 'vs2re32' | 'vs2re64':
+            case 'vs2r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
-                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=(","+vm))
-            case 'vs4r.v' | 'vs4re8.v' | 'vs4re16.v' | 'vs4re32' | 'vs4re64':
+            case 'vs4r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
-                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=(","+vm))
-            case 'vs8r.v' | 'vs8re8.v' | 'vs8re16.v' | 'vs8re32' | 'vs8re64':
+            case 'vs8r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
-                temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
+                temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=(","+vm))
             case 'vmv1r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
