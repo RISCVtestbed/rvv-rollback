@@ -193,7 +193,8 @@ def replace_instruction(line, linenum, verbosity):
 
     change_instruction_list = ["vsetvl", "vsetvli", "vsetivli",
                                "vzext.vf2", "vzext.vf4", "vzext.vf8",
-                               "vsext.vf2", "vsext.vf4", "vsext.vf8"]
+                               "vsext.vf2", "vsext.vf4", "vsext.vf8",
+                               "csrr"]
     # Change other miscellaneous instruction
     if any(word in line for word in change_instruction_list):
         line_changed = True
@@ -305,6 +306,14 @@ def replace_instruction(line, linenum, verbosity):
                         "\tvwadd.vx, {VD}, {VD},  x0 {VM}\n" +
                         "\tvwadd.vx, {VD}, {VD},  x0 {VM}\n")  # signed widening add zero three times
                 newline = newline.format(VD=vd, VS2=vs2, VM=vm)
+            case 'csrr':
+                if instruction[2].strip() == "vlenb":
+                    vd = instruction[1]
+                    newline = ("\tcsrr {VD}, vl\n" +
+                               "\tsrli {VD}, {VD}, 3\n")
+                    newline = newline.format(VD=vd)
+                else:
+                    line_changed = False
 
 
     if verbosity > 0 and line_changed == True:
