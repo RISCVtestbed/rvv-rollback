@@ -12,7 +12,7 @@ import argparse
 import re
 
 
-def replace_instruction(line, linenum, verbosity):
+def replace_instruction(line, linenum, args):
     newline = line
     line_changed = False
 
@@ -27,8 +27,12 @@ def replace_instruction(line, linenum, verbosity):
                 v_pseven_attribute_added = True
 
 
-
-
+    if args.base_isa_version < 2.0:
+        base_v2_attribute_list = ["_zicsr2p0", "_zifencei2p0"]
+        for attribute in base_v2_attribute_list:
+            if attribute in newline:
+                newline = newline.replace(attribute, '')
+                line_changed = True
     
 
     opcode_name_change_dict = {
@@ -316,7 +320,7 @@ def replace_instruction(line, linenum, verbosity):
                     line_changed = False
 
 
-    if verbosity > 0 and line_changed == True:
+    if args.verbose > 0 and line_changed == True:
         print("Line number: {LINENUM}".format(LINENUM=linenum))
         print("original = " + line)
         print("updated  = " + newline)
@@ -338,13 +342,15 @@ def main(args):
 
     print("input file = {IN}  |  output file = {OUT}\n".format(IN=filename, OUT=outfilename))
 
+    print("base ISA version = {}".format(args.base_isa_version))
+
     file = open(filename, 'r')
     outfile = open(outfilename, 'w')
 
     linenum = 0
     for line in file.readlines():
         linenum = linenum + 1
-        newline = replace_instruction(line, linenum, args.verbose)
+        newline = replace_instruction(line, linenum, args)
         outfile.writelines(newline)
 
 
@@ -380,6 +386,11 @@ if __name__ == "__main__":
         "--version",
         action="version",
         version="%(prog)s (version {version})".format(version=__version__))
+
+    # Specify base ISA version to support
+    parser.add_argument("-b", "--base_isa_version", action="store",
+                        dest="base_isa_version", default=1.0, type=float,
+                        help="RISC-V ISA version to support")
 
     args = parser.parse_args()
     main(args)
