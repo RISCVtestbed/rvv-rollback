@@ -112,7 +112,7 @@ def replace_instruction(line, linenum, verbosity):
         if (len(instruction) <= 3):
             vm = ""
         elif (instruction[3]):
-            vm = instruction[3]
+            vm = "," + instruction[3]
         newline = "# Replacing Line: {LINENUM} - {LINE}".format(
                     LINENUM=linenum, LINE=line)
         newline += "\tsd     t0, 0(sp)\n"
@@ -125,51 +125,51 @@ def replace_instruction(line, linenum, verbosity):
             case 'vl1r.v' | 'vl1re8.v' | 'vl1re16.v' | 'vl1re32' | 'vl1re64':
                 temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vl2r.v' | 'vl2re8.v' | 'vl2re16.v' | 'vl2re32' | 'vl2re64':
                 temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vl4r.v' | 'vl4re8.v' | 'vl4re16.v' | 'vl4re32' | 'vl4re64':
                 temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vl8r.v' | 'vl8re8.v' | 'vl8re16.v' | 'vl8re32' | 'vl8re64':
                 temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vs1r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vs2r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vs4r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vs8r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vmv1r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vmv2r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
                 temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vmv4r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
                 temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
             case 'vmv8r.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvmv.v.v    {RD}, {RS} {VM}\n".format(
-                    RD=rd, RS=rs, VM=(","+vm))
+                    RD=rd, RS=rs, VM=vm)
         newline += temp_vset
         newline += temp_vinstr
         newline += "\tvsetvl   x0, t0, t1\n"
@@ -246,11 +246,11 @@ def replace_instruction(line, linenum, verbosity):
                 vd = instruction[1]
                 vs2 = instruction[2]
                 if instruction[3]:
-                    vm = instruction[3]
+                    vm = "," + instruction[3]
                 else:
                     vm = ""
                 newline = "\tvwaddu.vx, {VD}, {VS2}, x0 {VM}\n" # unsigned widening add zero
-                newline = newline.format(VD=vd, VS2=vs2, VM=(","+vm))
+                newline = newline.format(VD=vd, VS2=vs2, VM=vm)
 
             case 'vzext.vf4':
                 vd = instruction[1]
@@ -261,7 +261,7 @@ def replace_instruction(line, linenum, verbosity):
                     vm = ""
                 newline = ("\tvwaddu.vx, {VD}, {VS2}, x0 {VM}\n" +
                         "\tvwaddu.vx, {VD}, {VD},  x0 {VM}\n")  # unsigned widening add zero twice
-                newline = newline.format(VD=vd, VS2=vs2, VM=(","+vm))
+                newline = newline.format(VD=vd, VS2=vs2, VM=vm)
             case 'vzext.vf8':
                 vd = instruction[1]
                 vs2 = instruction[2]
@@ -272,7 +272,7 @@ def replace_instruction(line, linenum, verbosity):
                 newline = ("\tvwaddu.vx, {VD}, {VS2}, x0 {VM}\n" +
                         "\tvwaddu.vx, {VD}, {VD},  x0 {VM}\n" +
                         "\tvwaddu.vx, {VD}, {VD},  x0 {VM}\n")  # unsigned widening add zero three times
-                newline = newline.format(VD=vd, VS2=vs2, VM=(","+vm))
+                newline = newline.format(VD=vd, VS2=vs2, VM=vm)
 
             case 'vsext.vf2':  # sign extend vsext.v vd, vs2, vm
                 vd = instruction[1]
@@ -282,7 +282,7 @@ def replace_instruction(line, linenum, verbosity):
                 else:
                     vm = ""
                 newline = "\tvwadd.vx, {VD}, {VS2}, x0 {VM}\n"  # signed widening add zero
-                newline = newline.format(VD=vd, VS2=vs2, VM=(","+vm))
+                newline = newline.format(VD=vd, VS2=vs2, VM=vm)
 
             case 'vsext.vf4':
                 vd = instruction[1]
@@ -293,7 +293,7 @@ def replace_instruction(line, linenum, verbosity):
                     vm = ""
                 newline = ("\tvwadd.vx, {VD}, {VS2}, x0 {VM}\n" +
                         "\tvwadd.vx, {VD}, {VD},  x0 {VM}\n")  # signed widening add zero twice
-                newline = newline.format(VD=vd, VS2=vs2, VM=(","+vm))
+                newline = newline.format(VD=vd, VS2=vs2, VM=vm)
             case 'vsext.vf8':
                 vd = instruction[1]
                 vs2 = instruction[2]
@@ -304,7 +304,7 @@ def replace_instruction(line, linenum, verbosity):
                 newline = ("\tvwadd.vx, {VD}, {VS2}, x0 {VM}\n" +
                         "\tvwadd.vx, {VD}, {VD},  x0 {VM}\n" +
                         "\tvwadd.vx, {VD}, {VD},  x0 {VM}\n")  # signed widening add zero three times
-                newline = newline.format(VD=vd, VS2=vs2, VM=(","+vm))
+                newline = newline.format(VD=vd, VS2=vs2, VM=vm)
 
 
     if verbosity > 0 and line_changed == True:
