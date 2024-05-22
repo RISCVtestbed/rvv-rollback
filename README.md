@@ -21,7 +21,7 @@ Other toolchains which support RVV0.7:
 - <https://github.com/brucehoult/riscv-gnu-toolchain/tree/rvv-0.7.1> is a clone of the deprecated rvv-0.7.1 branch of the riscv-gnu-toolchain
 - <https://occ.t-head.cn/community/download?id=3927429448189939712> is a gcc8.4 toolchain supplied for C9XX CPU. From testing it has superior auto-vectorization performance when run on C906 hardware, and provides good comparison for other compilers.
 
-These toolchains are available for download on the [EPCC RISC-V testbed website](http://riscv.epcc.ed.ac.uk/), and are installed on the login nodes.
+These toolchains are available for download on the [Edinburgh University DataShare site](https://datashare.ed.ac.uk/handle/10283/4835), and are installed on the login nodes of the [EPCC RISC-V testbed](http://riscv.epcc.ed.ac.uk/).
 
 
 
