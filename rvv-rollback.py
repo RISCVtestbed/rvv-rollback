@@ -199,16 +199,16 @@ def replace_instruction(line, linenum, verbosity):
         line_changed = True
         instruction = re.split(r"[, \t]+", line.lstrip())
         
-
+        tail_mask_policy = r",\s*tu|,\s*ta|,\s*mu|,\s*ma"
         match instruction[0]:
             # ===========================================================
             # VECTOR CONFIGURATION
             case "vsetvl":
                 # disable tail/mask agnostic policy
-                newline = line.replace(", ta", "").replace(", tu", "").replace(", ma", "").replace(", mu", "")
+                newline = re.sub(tail_mask_policy, '', newline)
             case "vsetvli":
                 # disable tail/mask agnostic policy
-                newline = line.replace(", ta", "").replace(", tu", "").replace(", ma", "").replace(", mu", "")
+                newline = re.sub(tail_mask_policy, '', newline)
                 fractional_LMUL = ["mf2", "mf4", "mf8"]
                 if any(fLMUL in line for fLMUL in fractional_LMUL):
                     print(
@@ -223,8 +223,7 @@ def replace_instruction(line, linenum, verbosity):
                     LINENUM=linenum, LINE=line)
                 newline +=  "\tsd     t0, 0(sp)\t  # rvv-rollback\n"
                 newline += "\taddi   t0, " + AVL +  " # rvv-rollback\n"
-                temp =line.replace(", ta", "").replace(
-                    ", tu", "").replace(", ma", "").replace(", mu", "").replace(AVL, "t0").replace("vsetivli", "vsetvli").replace("\n","")
+                temp = re.sub(tail_mask_policy, '', line)
                 newline += temp + " # rvv-rollback\n"
                 newline += "\tld     t0, 0(sp)\t  # rvv-rollback\n"
                 suggestion = "# Replacing Line: {LINENUM} - {LINE}".format(
