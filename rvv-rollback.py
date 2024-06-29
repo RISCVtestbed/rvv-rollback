@@ -248,15 +248,16 @@ def replace_instruction(line, linenum, verbosity):
                 newline = "# Replacing Line: {LINENUM} - {LINE}".format(
                     LINENUM=linenum, LINE=line)
                 newline +=  "\tsd     t0, 0(sp)\t  # rvv-rollback\n"
-                newline += "\taddi   t0, " + AVL +  " # rvv-rollback\n"
+                newline += "\taddi   t0, t0, " + AVL +  " # rvv-rollback\n"
                 temp = re.sub(tail_mask_policy, '', line)
+                temp = temp.replace(AVL, "t0").replace("vsetivli", "vsetvli").replace("\n","")
                 newline += temp + " # rvv-rollback\n"
                 newline += "\tld     t0, 0(sp)\t  # rvv-rollback\n"
                 suggestion = "# Replacing Line: {LINENUM} - {LINE}".format(
                     LINENUM=linenum, LINE=line)
                 suggestion += "# Suggestion\n"
                 suggestion += "# Pick unused register e.g. t0\n"
-                suggestion += "#\taddi   t0, " + AVL + '\n'
+                suggestion += "#\taddi   t0, t0, " + AVL + '\n'
                 suggestion += "# " + temp + '\n'
                 newline += suggestion
 
