@@ -11,25 +11,50 @@ __license__ = "MIT"
 import argparse
 import re
 
+def replace_attribute(line):
+    newline = line
+    line_changed = False
+
+    modify_dict = {
+        "a" : "2p0",
+        "f" : "2p0",
+        "d" : "2p0",
+        "v" : "0p7",
+        "rv64i" : "2p0",
+    }
+
+    remove_list = [
+        "zve32f",
+        "zve32x",
+        "zve64d",
+        "zve64f",
+        "zve64x",
+        "zvl128b",
+        "zvl32b",
+        "zvl64b",
+        "zicsr",
+        "zifencei",
+    ]
+
+    attribute_list = newline[newline.find("\"")+1:newline.rfind("\"")].split("_")
+    for attribute in attribute_list:
+        name = attribute[:-3]
+        version = attribute[-3:]
+        if name in modify_dict and attribute != name+modify_dict[name]:
+            newline = newline.replace(attribute, name+modify_dict[name])
+            line_changed = True
+        if name in remove_list:
+            newline = newline.replace("_"+attribute, "")
+            line_changed = True
+
+    return newline, line_changed
 
 def replace_instruction(line, linenum, verbosity):
     newline = line
     line_changed = False
 
-    v_one_attribute_list = ["_v1p0","_zve32f1p0","_zve32x1p0","_zve64d1p0","_zve64f1p0","_zve64x1p0","_zvl128b1p0","_zvl32b1p0","_zvl64b1p0"]
-    v_pseven_attribute_added = False
-    for attribute in v_one_attribute_list:
-        if attribute in newline:
-            newline = newline.replace(attribute, '')
-            line_changed = True
-            if not v_pseven_attribute_added:
-                newline = newline.replace("\"\n", "_v0p7\"\n")
-                v_pseven_attribute_added = True
-
-
-
-
-    
+    if ".attribute" in line and "\"" in line:
+        newline, line_changed = replace_attribute(line)
 
     opcode_name_change_dict = {
         # V1.0 -> V0.7
