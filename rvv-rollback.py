@@ -131,7 +131,9 @@ def replace_instruction(line, linenum, verbosity):
     # WHOLE REGISTER LOAD/STORE/COPY:
     if any(word in line for word in whole_register_list):
         line_changed = True
-        instruction = re.split(r"[, \t]+", line.lstrip())
+        instruction = line.split('#')[0] # remove comment
+        instruction = re.split(r"[, \t]+", instruction.lstrip())
+        instruction = [i for i in instruction if i] # filter out empty string
         instruction[-1] = instruction[-1].replace("\n", "")
         rd = instruction[1]
         rs = instruction[2]
