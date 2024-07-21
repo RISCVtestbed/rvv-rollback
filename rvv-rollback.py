@@ -10,31 +10,20 @@ __license__ = "MIT"
 
 import argparse
 import re
+import yaml
+import os
+
+python_file_directory = os.path.dirname(__file__)
 
 def replace_attribute(line):
     newline = line
     line_changed = False
 
-    modify_dict = {
-        "a" : "2p0",
-        "f" : "2p0",
-        "d" : "2p0",
-        "v" : "0p7",
-        "rv64i" : "2p0",
-    }
+    with open(f'{python_file_directory}/yaml-files/ext_modify.yaml', 'r') as file:
+        modify_dict = yaml.safe_load(file)
 
-    remove_list = [
-        "zve32f",
-        "zve32x",
-        "zve64d",
-        "zve64f",
-        "zve64x",
-        "zvl128b",
-        "zvl32b",
-        "zvl64b",
-        "zicsr",
-        "zifencei",
-    ]
+    with open(f'{python_file_directory}/yaml-files/ext_removal.yaml', 'r') as file:
+        remove_list = yaml.safe_load(file)
 
     attribute_list = newline[newline.find("\"")+1:newline.rfind("\"")].split("_")
     for attribute in attribute_list:
@@ -56,78 +45,17 @@ def replace_instruction(line, linenum, verbosity):
     if ".attribute" in line and "\"" in line:
         newline, line_changed = replace_attribute(line)
 
-    opcode_name_change_dict = {
-        # V1.0 -> V0.7
-        "vle32.v"    : "vlw.v",
-        "vle16.v"    : "vlh.v",
-        "vle8.v"     : "vlb.v",
-        "vse32.v"    : "vsw.v",
-        "vse16.v"    : "vsh.v",
-        "vse8.v"     : "vsb.v",
-        "vluxei32.v" : "vlxw.v",
-        "vluxei16.v" : "vlxh.v",
-        "vluxei8.v"  : "vlxb.v",
-        "vsuxei32.v" : "vsuxw.v",
-        "vsuxei16.v" : "vsuxh.v",
-        "vsuxei8.v"  : "vsuxb.v",
-        "vlse32.v"   : "vlsw.v",
-        "vlse16.v"   : "vlsh.v",
-        "vlse8.v"    : "vlsb.v",
-        "vsse32.v"   : "vssw.v",
-        "vsse16.v"   : "vssh.v",
-        "vsse8.v"    : "vssb.v",
-        "vloxei32.v" : "vlxw.v",
-        "vloxei16.v" : "vlxh.v",
-        "vloxei8.v"  : "vlxb.v",
-        "vsoxei32.v" : "vsxw.v",
-        "vsoxei16.v" : "vsxh.v",
-        "vsoxei8.v"  : "vsxb.v",
-        "vloxseg1e8.v" "vlxseg1b.v"
-        "vluxseg1e8.v" "vlxseg1b.v"
-        "vsoxseg1e8.v" "vsxseg1b.v"
-        "vsuxseg1e8.v" "vsxseg1b.v"
-        "vfncvt.xu.f.w": "vfncvt.xu.f.v",
-        "vfncvt.x.f.w": "vfncvt.x.f.v",
-        "vfncvt.f.xu.w": "vfncvt.f.xu.v",
-        "vfncvt.f.x.w": "vfncvt.f.x.v",
-        "vfncvt.f.f.w": "vfncvt.f.f.v",
-        "vfredusum": "vfredsum",
-        "vfwredusum.vs":"vfwredsum.vs",
-        "vnclip.wv": "vnclip.vv",
-        "vnclip.wx": "vnclip.vx",
-        "vnclip.wi": "vnclip.vi",
-        "vnclipu.wv": "vnclipu.vv",
-        "vnclipu.wx": "vnclipu.vx",
-        "vnclipu.wi": "vnclipu.vi",
-        "vnsra.wv" : "vnsra.vv",
-        "vnsra.wx" : "vnsra.vx",
-        "vnsra.wi" : "vnsra.vi",
-        "vnsrl.wv" : "vnsrl.vv",
-        "vnsrl.wx" : "vnsrl.vx",
-        "vnsrl.wi" : "vnsrl.vi",
-        "vmandn.mm" : "vmandnot.mm",
-        "vmorn.mm" : "vmornot.mm",
-        "vmmv.m" : "vmcpy.m",
-        "vcpopc.m" : "vmpopc.m",
-        "vpopc.m" : "vmpopc.m",
-        "vfirst.m" : "vmfirst.m",
-    }
+    with open(f'{python_file_directory}/yaml-files/opcode_change.yaml', 'r') as file:
+        opcode_name_change_dict = yaml.safe_load(file)
 
     for key in opcode_name_change_dict:
         if (line.__contains__(key)):
             line_changed = True
             newline = line.replace(key, opcode_name_change_dict[key])
 
-        
+    with open(f'{python_file_directory}/yaml-files/whole_registers.yaml', 'r') as file:
+        whole_register_list = yaml.safe_load(file)
     
-    
-    whole_register_list = ["vl1r.v", "vl1re8.v", "vl1re16.v", "vl1re32", "vl1re64",
-                           "vl2r.v", "vl2re8.v", "vl2re16.v", "vl2re32", "vl2re64",
-                           "vl4r.v", "vl4re8.v", "vl4re16.v", "vl4re32", "vl4re64",
-                           "vl8r.v", "vl8re8.v", "vl8re16.v", "vl8re32", "vl8re64",
-                           "vs1r.v", "vs2r.v","vs4r.v", "vs8r.v", 
-                           "vmv1r.v", "vmv2r.v", "vmv4r.v", "vmv8r.v"]
-
     # WHOLE REGISTER LOAD/STORE/COPY:
     if any(word in line for word in whole_register_list):
         line_changed = True
