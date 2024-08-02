@@ -15,15 +15,22 @@ import os
 
 python_file_directory = os.path.dirname(__file__)
 
+with open(f'{python_file_directory}/yaml-files/opcode_change.yaml', 'r') as file:
+    opcode_name_change_dict = yaml.safe_load(file)
+
+with open(f'{python_file_directory}/yaml-files/ext_modify.yaml', 'r') as file:
+    modify_dict = yaml.safe_load(file)
+
+with open(f'{python_file_directory}/yaml-files/ext_removal.yaml', 'r') as file:
+    remove_list = yaml.safe_load(file)
+
+with open(f'{python_file_directory}/yaml-files/whole_registers.yaml', 'r') as file:
+    whole_register_list = yaml.safe_load(file)
+
+
 def replace_attribute(line):
     newline = line
     line_changed = False
-
-    with open(f'{python_file_directory}/yaml-files/ext_modify.yaml', 'r') as file:
-        modify_dict = yaml.safe_load(file)
-
-    with open(f'{python_file_directory}/yaml-files/ext_removal.yaml', 'r') as file:
-        remove_list = yaml.safe_load(file)
 
     attribute_list = newline[newline.find("\"")+1:newline.rfind("\"")].split("_")
     for attribute in attribute_list:
@@ -48,17 +55,11 @@ def replace_instruction(line, linenum, verbosity):
     if ".attribute" in line and "\"" in line:
         newline, line_changed = replace_attribute(line)
 
-    with open(f'{python_file_directory}/yaml-files/opcode_change.yaml', 'r') as file:
-        opcode_name_change_dict = yaml.safe_load(file)
-
     for key in opcode_name_change_dict:
         if (line.__contains__(key)):
             line_changed = True
             newline = line.replace(key, opcode_name_change_dict[key])
 
-    with open(f'{python_file_directory}/yaml-files/whole_registers.yaml', 'r') as file:
-        whole_register_list = yaml.safe_load(file)
-    
     # WHOLE REGISTER LOAD/STORE/COPY:
     if any(word in line for word in whole_register_list):
 
