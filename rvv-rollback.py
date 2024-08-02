@@ -61,6 +61,7 @@ def replace_instruction(line, linenum, verbosity):
     
     # WHOLE REGISTER LOAD/STORE/COPY:
     if any(word in line for word in whole_register_list):
+
         line_changed = True
         instruction = line.split('#')[0] # remove comment
         instruction = re.split(r"[, \t]+", instruction.lstrip())
@@ -81,19 +82,19 @@ def replace_instruction(line, linenum, verbosity):
         temp_vset = ""
         temp_vinstr = ""
         match instruction[0]:
-            case 'vl1r.v' | 'vl1re8.v' | 'vl1re16.v' | 'vl1re32' | 'vl1re64':
+            case 'vl1r.v' | 'vl1re8.v' | 'vl1re16.v' | 'vl1re32.v' | 'vl1re64.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=vm)
-            case 'vl2r.v' | 'vl2re8.v' | 'vl2re16.v' | 'vl2re32' | 'vl2re64':
+            case 'vl2r.v' | 'vl2re8.v' | 'vl2re16.v' | 'vl2re32.v' | 'vl2re64.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m2\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=vm)
-            case 'vl4r.v' | 'vl4re8.v' | 'vl4re16.v' | 'vl4re32' | 'vl4re64':
+            case 'vl4r.v' | 'vl4re8.v' | 'vl4re16.v' | 'vl4re32.v' | 'vl4re64.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m4\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=vm)
-            case 'vl8r.v' | 'vl8re8.v' | 'vl8re16.v' | 'vl8re32' | 'vl8re64':
+            case 'vl8r.v' | 'vl8re8.v' | 'vl8re16.v' | 'vl8re32.v' | 'vl8re64.v':
                 temp_vset ="\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS} {VM}\n".format(
                     RD=rd, RS=rs, VM=vm)
