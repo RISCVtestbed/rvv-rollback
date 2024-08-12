@@ -30,6 +30,8 @@ with open(f"{python_file_directory}/yaml-files/whole_registers.yaml", "r") as fi
 with open(f"{python_file_directory}/yaml-files/change_instruction.yaml", "r") as file:
     change_instruction_list = yaml.safe_load(file)
 
+with open(f"{python_file_directory}/yaml-files/unsupported_opcode.yaml", "r") as file:
+    unsupported_opcode_list = yaml.safe_load(file)
 
 def replace_attribute(line):
     newline = line
@@ -55,6 +57,12 @@ def replace_instruction(line, linenum, verbosity):
 
     if ".attribute" in line and '"' in line:
         newline, line_changed = replace_attribute(line)
+
+    for key in unsupported_opcode_list:
+        if line.__contains__(key):
+            print("Encountered opcode that cannot be translated: " + key)
+            print("Exiting the rvv-rollback tool...")
+            exit(1)
 
     for key in opcode_name_change_dict:
         if line.__contains__(key):
