@@ -1,0 +1,9 @@
+- vsetvl
+- vsetvli
+- vsetivli
+- vzext.vf2
+- vzext.vf4
+- vzext.vf8
+- vsext.vf2
+- vsext.vf4
+- vsext.vf8
