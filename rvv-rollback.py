@@ -49,9 +49,6 @@ def replace_instruction(line, linenum, verbosity):
     newline = line
     line_changed = False
 
-    if "addrsig" in line or "uleb128" in line:
-        return ""
-
     if ".attribute" in line and "\"" in line:
         newline, line_changed = replace_attribute(line)
 
