@@ -80,8 +80,10 @@ def replace_instruction(line, linenum, verbosity):
         )
         newline += "\tsd     t0, 0(sp)\n"
         newline += "\tsd     t1, 8(sp)\n"
-        newline += "\tcsrr     t0, vl\n"
-        newline += "\tcsrr     t1, vtype\n"
+        tmp_regs = ['t0', 't1', 't2']
+        unused_tmp_reg = [reg for reg in tmp_regs if reg not in rs]
+        newline += f"\tcsrr     {unused_tmp_reg[0]}, vl\n"
+        newline += f"\tcsrr     {unused_tmp_reg[1]}, vtype\n"
         temp_vset = ""
         temp_vinstr = ""
         match instruction[0]:
@@ -131,7 +133,7 @@ def replace_instruction(line, linenum, verbosity):
                 )
         newline += temp_vset
         newline += temp_vinstr
-        newline += "\tvsetvl   x0, t0, t1\n"
+        newline += f"\tvsetvl   x0, {unused_tmp_reg[0]}, {unused_tmp_reg[1]}\n"
         newline += "\tld     t0, 0(sp)\n"
         newline += "\tld     t1, 8(sp)\n"
 
