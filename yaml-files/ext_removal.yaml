@@ -1,11 +1,10 @@
-- zve32f
-- zve32x
-- zve64d
-- zve64f
-- zve64x
-- zvl128b
-- zvl32b
-- zvl64b
-- zicsr
-- zifencei
-- zmmul
+- zve32f        # Vector extensions for embedded processors
+- zve32x        # Vector extensions for embedded processors
+- zve64d        # Vector extensions for embedded processors
+- zve64f        # Vector extensions for embedded processors
+- zve64x        # Vector extensions for embedded processors
+- zvl128b       # Minimum vector length standard extensions (128-bit)
+- zvl64b        # Minimum vector length standard extensions (64-bit)
+- zvl32b        # Minimum vector length standard extensions (32-bit)
+- zifencei      # Instruction-Fetch Fence
+- zmmul         # Subset of the M extension that discards division.

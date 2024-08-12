@@ -1,5 +1,7 @@
-a     : 2p0
-f     : 2p0
-d     : 2p0
-v     : 0p7
-rv64i : 2p0
+a     : 2p0   # atomic instructions
+f     : 2p0   # floating-point instructions (single precision)
+d     : 2p0   # floating-point instructions (double precision)
+m     : 2p0   # integer multiplication and division
+c     : 2p0   # compressed instructions
+v     : 0p7   # vector instructions
+rv64i : 2p0   # RV64I base integer instructions
