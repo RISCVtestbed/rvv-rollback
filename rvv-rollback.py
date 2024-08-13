@@ -30,8 +30,8 @@ with open(f"{python_file_directory}/yaml-files/whole_registers.yaml", "r") as fi
 with open(f"{python_file_directory}/yaml-files/change_instruction.yaml", "r") as file:
     change_instruction_list = yaml.safe_load(file)
 
-with open(f"{python_file_directory}/yaml-files/unsupported_opcode.yaml", "r") as file:
-    unsupported_opcode_list = yaml.safe_load(file)
+with open(f"{python_file_directory}/yaml-files/unsupported.yaml", "r") as file:
+    unsupported_list = yaml.safe_load(file)
 
 def replace_attribute(line):
     newline = line
@@ -58,9 +58,9 @@ def replace_instruction(line, linenum, verbosity):
     if ".attribute" in line and '"' in line:
         newline, line_changed = replace_attribute(line)
 
-    for key in unsupported_opcode_list:
+    for key in unsupported_list:
         if line.__contains__(key):
-            print("Encountered opcode that cannot be translated: " + key)
+            print("Encountered instruction that cannot be translated: [" + key + "] in line: " + line)
             print("Exiting the rvv-rollback tool...")
             exit(1)
 
@@ -95,7 +95,7 @@ def replace_instruction(line, linenum, verbosity):
         temp_vset = ""
         temp_vinstr = ""
         match instruction[0]:
-            case "vl1r.v" | "vl1re8.v" | "vl1re16.v" | "vl1re32.v" | "vl1re64.v":
+            case "vl1r.v" | "vl1re8.v" | "vl1re16.v" | "vl1re32.v" | "vl1re64.v" | "vle64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
             case "vl2r.v" | "vl2re8.v" | "vl2re16.v" | "vl2re32.v" | "vl2re64.v":
@@ -107,7 +107,7 @@ def replace_instruction(line, linenum, verbosity):
             case "vl8r.v" | "vl8re8.v" | "vl8re16.v" | "vl8re32.v" | "vl8re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
-            case "vs1r.v":
+            case "vs1r.v" | "vse64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
             case "vs2r.v":

@@ -26,3 +26,5 @@
 - vmv2r.v
 - vmv4r.v
 - vmv8r.v
+- vle64.v
+- vse64.v
