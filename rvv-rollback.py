@@ -69,9 +69,6 @@ def replace_instruction(line, linenum, verbosity):
             line_changed = True
             newline = line.replace(key, opcode_name_change_dict[key])
 
-    if ".uleb128" in line:
-        return ""
-
     # WHOLE REGISTER LOAD/STORE/COPY:
     if any(word in line for word in whole_register_list):
 
