@@ -3,6 +3,9 @@
 - zve64d        # Vector extensions for embedded processors
 - zve64f        # Vector extensions for embedded processors
 - zve64x        # Vector extensions for embedded processors
+- zvl1024b      # Minimum vector length standard extensions (128-bit)
+- zvl512b       # Minimum vector length standard extensions (128-bit)
+- zvl256b       # Minimum vector length standard extensions (128-bit)
 - zvl128b       # Minimum vector length standard extensions (128-bit)
 - zvl64b        # Minimum vector length standard extensions (64-bit)
 - zvl32b        # Minimum vector length standard extensions (32-bit)
