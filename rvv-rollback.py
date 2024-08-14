@@ -203,7 +203,7 @@ def replace_instruction(line, linenum, verbosity):
                 newline += "\taddi   t0, t0, " + AVL + " # rvv-rollback\n"
                 temp = re.sub(tail_mask_policy, "", line)
                 temp = (
-                    temp.replace(AVL, "t0")
+                    temp.replace(f" {AVL},", "t0,")
                     .replace("vsetivli", "vsetvli")
                     .replace("\n", "")
                 )
