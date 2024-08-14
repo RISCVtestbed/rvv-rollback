@@ -55,7 +55,7 @@ def replace_instruction(line, linenum, verbosity):
     newline = line
     line_changed = False
 
-    if ".attribute" in line and '"' in line:
+    if re.search(r'\.attribute\s+5', line):
         newline, line_changed = replace_attribute(line)
 
     for key in unsupported_list:
@@ -68,6 +68,9 @@ def replace_instruction(line, linenum, verbosity):
         if line.__contains__(key):
             line_changed = True
             newline = line.replace(key, opcode_name_change_dict[key])
+
+    if ".uleb128" in line:
+        return ""
 
     # WHOLE REGISTER LOAD/STORE/COPY:
     if any(word in line for word in whole_register_list):
@@ -95,7 +98,7 @@ def replace_instruction(line, linenum, verbosity):
         temp_vset = ""
         temp_vinstr = ""
         match instruction[0]:
-            case "vl1r.v" | "vl1re8.v" | "vl1re16.v" | "vl1re32.v" | "vl1re64.v" | "vle64.v":
+            case "vl1r.v" | "vl1re8.v" | "vl1re16.v" | "vl1re32.v" | "vl1re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
             case "vl2r.v" | "vl2re8.v" | "vl2re16.v" | "vl2re32.v" | "vl2re64.v":
@@ -107,7 +110,7 @@ def replace_instruction(line, linenum, verbosity):
             case "vl8r.v" | "vl8re8.v" | "vl8re16.v" | "vl8re32.v" | "vl8re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
-            case "vs1r.v" | "vse64.v":
+            case "vs1r.v" :
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
             case "vs2r.v":
