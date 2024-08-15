@@ -33,6 +33,7 @@ with open(f"{python_file_directory}/yaml-files/change_instruction.yaml", "r") as
 with open(f"{python_file_directory}/yaml-files/unsupported.yaml", "r") as file:
     unsupported_list = yaml.safe_load(file)
 
+
 def replace_attribute(line):
     newline = line
     line_changed = False
@@ -55,12 +56,17 @@ def replace_instruction(line, linenum, verbosity):
     newline = line
     line_changed = False
 
-    if re.search(r'\.attribute\s+5', line):
+    if re.search(r"\.attribute\s+5", line):
         newline, line_changed = replace_attribute(line)
 
     for key in unsupported_list:
         if line.__contains__(key):
-            print("Encountered instruction that cannot be translated: [" + key + "] in line: " + line)
+            print(
+                "Encountered instruction that cannot be translated: ["
+                + key
+                + "] in line: "
+                + line
+            )
             print("Exiting the rvv-rollback tool...")
             exit(1)
 
@@ -88,7 +94,7 @@ def replace_instruction(line, linenum, verbosity):
         )
         newline += "\tsd     t0, 0(sp)\n"
         newline += "\tsd     t1, 8(sp)\n"
-        tmp_regs = ['t0', 't1', 't2']
+        tmp_regs = ["t0", "t1", "t2"]
         unused_tmp_reg = [reg for reg in tmp_regs if reg not in rs]
         newline += f"\tcsrr     {unused_tmp_reg[0]}, vl\n"
         newline += f"\tcsrr     {unused_tmp_reg[1]}, vtype\n"
@@ -107,7 +113,7 @@ def replace_instruction(line, linenum, verbosity):
             case "vl8r.v" | "vl8re8.v" | "vl8re16.v" | "vl8re32.v" | "vl8re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
-            case "vs1r.v" :
+            case "vs1r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
             case "vs2r.v":
@@ -139,6 +145,12 @@ def replace_instruction(line, linenum, verbosity):
                 temp_vinstr = "\tvmv.v.v    {RD}, {RS}{VM}\n".format(
                     RD=rd, RS=rs, VM=vm
                 )
+            case "vle64.v":
+                temp_vset = "\tvsetvli  x0, x0, e64, m1\n"
+                temp_vinstr = "\tvle.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+            case "vse64.v":
+                temp_vset = "\tvsetvli  x0, x0, e64, m1\n"
+                temp_vinstr = "\tvse.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
         newline += temp_vset
         newline += temp_vinstr
         newline += f"\tvsetvl   x0, {unused_tmp_reg[0]}, {unused_tmp_reg[1]}\n"
@@ -200,7 +212,7 @@ def replace_instruction(line, linenum, verbosity):
                     LINENUM=linenum, LINE=line
                 )
                 newline += "\tsd     t0, 0(sp)\t  # rvv-rollback\n"
-                newline += "\taddi   t0, t0, " + AVL + " # rvv-rollback\n"
+                newline += f"\taddi   t0, {AVL}, 0 # rvv-rollback\n"
                 temp = re.sub(tail_mask_policy, "", line)
                 temp = (
                     temp.replace(f" {AVL},", "t0,")
@@ -214,7 +226,7 @@ def replace_instruction(line, linenum, verbosity):
                 )
                 suggestion += "# Suggestion\n"
                 suggestion += "# Pick unused register e.g. t0\n"
-                suggestion += "#\taddi   t0, t0, " + AVL + "\n"
+                suggestion += f"\taddi   t0, {AVL}, 0 \n"
                 suggestion += "# " + temp + "\n"
                 newline += suggestion
 
