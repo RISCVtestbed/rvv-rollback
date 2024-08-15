@@ -34,6 +34,22 @@ with open(f"{python_file_directory}/yaml-files/unsupported.yaml", "r") as file:
     unsupported_list = yaml.safe_load(file)
 
 
+def parse_instruction(line):
+    # Remove comment
+    instruction = line.split("#")[0]
+
+    # Split instruction by comma, space, or tab
+    instruction = re.split(r"[, \t]+", instruction.lstrip())
+
+    # Filter out empty string
+    instruction = [i for i in instruction if i]
+
+    # Remove newline character
+    instruction[-1] = instruction[-1].replace("\n", "")
+
+    return instruction
+
+
 def replace_attribute(line):
     newline = line
     line_changed = False
@@ -56,9 +72,8 @@ def replace_instruction(line, linenum, verbosity):
     newline = line
     line_changed = False
 
-    if re.search(r"\.attribute\s+5", line):
-        newline, line_changed = replace_attribute(line)
-
+    # Check for unsupported instructions
+    # If found, print error message and exit
     for key in unsupported_list:
         if line.__contains__(key):
             print(
@@ -70,6 +85,12 @@ def replace_instruction(line, linenum, verbosity):
             print("Exiting the rvv-rollback tool...")
             exit(1)
 
+    # Extention modification and removal
+    # The extension always starts with ".attribute 5"
+    if re.search(r"\.attribute\s+5", line):
+        newline, line_changed = replace_attribute(line)
+
+    # Check for instruction renaming
     for key in opcode_name_change_dict:
         if line.__contains__(key):
             line_changed = True
@@ -77,82 +98,91 @@ def replace_instruction(line, linenum, verbosity):
 
     # WHOLE REGISTER LOAD/STORE/COPY:
     if any(word in line for word in whole_register_list):
-
         line_changed = True
-        instruction = line.split("#")[0]  # remove comment
-        instruction = re.split(r"[, \t]+", instruction.lstrip())
-        instruction = [i for i in instruction if i]  # filter out empty string
-        instruction[-1] = instruction[-1].replace("\n", "")
-        rd = instruction[1]
-        rs = instruction[2]
-        if len(instruction) <= 3:
-            vm = ""
-        elif instruction[3]:
-            vm = ", " + instruction[3]
+        instruction = parse_instruction(line)
+
+        # Get destionation register, source register, and vector mask
+        rd, rs = instruction[1], instruction[2]
+        vm = ", " + instruction[3] if len(instruction) > 3 else ""
+
         newline = "# Replacing Line: {LINENUM} - {LINE}".format(
             LINENUM=linenum, LINE=line
         )
+
+        # Check if temporary registers are used
+        # Back up temporary registers values
+        # Back up vector configuration setting
         tmp_regs = ["t0", "t1", "t2"]
         unused_tmp_reg = [reg for reg in tmp_regs if reg not in rs]
         newline += f"\tsd     {unused_tmp_reg[0]}, 0(sp)\n"
         newline += f"\tsd     {unused_tmp_reg[1]}, 8(sp)\n"
-        newline += f"\tcsrr     {unused_tmp_reg[0]}, vl\n"
-        newline += f"\tcsrr     {unused_tmp_reg[1]}, vtype\n"
+        newline += f"\tcsrr   {unused_tmp_reg[0]}, vl\n"
+        newline += f"\tcsrr   {unused_tmp_reg[1]}, vtype\n"
+
+        # Set vector configuration setting and perform vector operation
         temp_vset = ""
         temp_vinstr = ""
         match instruction[0]:
             case "vl1r.v" | "vl1re8.v" | "vl1re16.v" | "vl1re32.v" | "vl1re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vl2r.v" | "vl2re8.v" | "vl2re16.v" | "vl2re32.v" | "vl2re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m2\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vl4r.v" | "vl4re8.v" | "vl4re16.v" | "vl4re32.v" | "vl4re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m4\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vl8r.v" | "vl8re8.v" | "vl8re16.v" | "vl8re32.v" | "vl8re64.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvlw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vs1r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vs2r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m2\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vs4r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m4\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vs8r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m8\n"
                 temp_vinstr = "\tvsw.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vmv1r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m1\n"
-                temp_vinstr = "\tvmv.v.v    {RD}, {RS}{VM}\n".format(
-                    RD=rd, RS=rs, VM=vm
-                )
+                temp_vinstr = "\tvmv.v.v  {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vmv2r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m2\n"
-                temp_vinstr = "\tvmv.v.v    {RD}, {RS}{VM}\n".format(
-                    RD=rd, RS=rs, VM=vm
-                )
+                temp_vinstr = "\tvmv.v.v  {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vmv4r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m4\n"
-                temp_vinstr = "\tvmv.v.v    {RD}, {RS}{VM}\n".format(
-                    RD=rd, RS=rs, VM=vm
-                )
+                temp_vinstr = "\tvmv.v.v  {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vmv8r.v":
                 temp_vset = "\tvsetvli  x0, x0, e32, m8\n"
-                temp_vinstr = "\tvmv.v.v    {RD}, {RS}{VM}\n".format(
-                    RD=rd, RS=rs, VM=vm
-                )
+                temp_vinstr = "\tvmv.v.v  {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vle64.v":
                 temp_vset = "\tvsetvli  x0, x0, e64, m1\n"
                 temp_vinstr = "\tvle.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
             case "vse64.v":
                 temp_vset = "\tvsetvli  x0, x0, e64, m1\n"
                 temp_vinstr = "\tvse.v    {RD}, {RS}{VM}\n".format(RD=rd, RS=rs, VM=vm)
+
         newline += temp_vset
         newline += temp_vinstr
+
+        # Restore previous vector configuration setting
         newline += f"\tvsetvl   x0, {unused_tmp_reg[0]}, {unused_tmp_reg[1]}\n"
         newline += f"\tld     {unused_tmp_reg[0]}, 0(sp)\n"
         newline += f"\tld     {unused_tmp_reg[1]}, 8(sp)\n"
@@ -179,46 +209,45 @@ def replace_instruction(line, linenum, verbosity):
     # Change other miscellaneous instruction
     if any(word in line for word in change_instruction_list):
         line_changed = True
-        instruction = re.split(r"[, \t]+", line.lstrip())
-        instruction[-1] = instruction[-1].replace("\n", "")
-
+        instruction = parse_instruction(line)
         tail_mask_policy = r",\s*tu|,\s*ta|,\s*mu|,\s*ma"
+
         match instruction[0]:
             # ===========================================================
             # VECTOR CONFIGURATION
             case "vsetvl":
-                # disable tail/mask agnostic policy
+                # Disable tail/mask agnostic policy
                 newline = re.sub(tail_mask_policy, "", newline)
+
             case "vsetvli":
-                # disable tail/mask agnostic policy
+                # Disable tail/mask agnostic policy
                 newline = re.sub(tail_mask_policy, "", newline)
-                fractional_LMUL = ["mf2", "mf4", "mf8"]
-                if any(fLMUL in line for fLMUL in fractional_LMUL):
-                    print(
-                        "ERROR: Line number: {LINENUM} - Fractional LMUL".format(
-                            LINENUM=linenum
-                        )
-                    )
+
             case "vsetivli":
-                fractional_LMUL = ["mf2", "mf4", "mf8"]
-                if any(fLMUL in line for fLMUL in fractional_LMUL):
-                    print(
-                        "ERROR: Line number: {LINENUM} - Fractional LMUL".format(
-                            LINENUM=linenum
-                        )
-                    )
+                # Get AVL from immediate value
                 AVL = instruction[2]
+
                 newline = "# Replacing Line: {LINENUM} - {LINE}".format(
                     LINENUM=linenum, LINE=line
                 )
+
+                # Back up temporary register value
                 newline += "\tsd     t0, 0(sp)\t  # rvv-rollback\n"
+
+                # Pass immediate value to register t0
+                # Because `vsetvli` accepts AVL from register
                 newline += f"\taddi   t0, x0, {AVL} # rvv-rollback\n"
+
+                # Disable tail/mask agnostic policy
                 temp = re.sub(tail_mask_policy, "", line)
+
+                # Replace `vsetivli` with `vsetvli`
                 temp = (
                     temp.replace(f" {AVL},", "t0,")
                     .replace("vsetivli", "vsetvli")
                     .replace("\n", "")
                 )
+
                 newline += temp + " # rvv-rollback\n"
                 newline += "\tld     t0, 0(sp)\t  # rvv-rollback\n"
                 suggestion = "# Replacing Line: {LINENUM} - {LINE}".format(
@@ -238,39 +267,27 @@ def replace_instruction(line, linenum, verbosity):
                 print("WARNING: Add -v to see suggestion (Also in output file)")
 
             # ===========================================================
-
             # VECTOR INTEGER ZERO/SIGN EXTENSION
             case "vzext.vf2":  # zero extend vzext.v vd, vs2, vm
-                vd = instruction[1]
-                vs2 = instruction[2]
-                if len(instruction) <= 3:
-                    vm = ""
-                else:
-                    vm = ", " + instruction[3]
+                vd, vs2 = instruction[1], instruction[2]
+                vm = ", " + instruction[3] if len(instruction) > 3 else ""
                 newline = (
                     "\tvwaddu.vx, {VD}, {VS2}, x0{VM}\n"  # unsigned widening add zero
                 )
                 newline = newline.format(VD=vd, VS2=vs2, VM=vm)
 
             case "vzext.vf4":
-                vd = instruction[1]
-                vs2 = instruction[2]
-                if len(instruction) <= 3:
-                    vm = ""
-                else:
-                    vm = ", " + instruction[3]
+                vd, vs2 = instruction[1], instruction[2]
+                vm = ", " + instruction[3] if len(instruction) > 3 else ""
                 newline = (
                     "\tvwaddu.vx, {VD}, {VS2}, x0{VM}\n"
                     + "\tvwaddu.vx, {VD}, {VD},  x0{VM}\n"
                 )  # unsigned widening add zero twice
                 newline = newline.format(VD=vd, VS2=vs2, VM=vm)
+
             case "vzext.vf8":
-                vd = instruction[1]
-                vs2 = instruction[2]
-                if len(instruction) <= 3:
-                    vm = ""
-                else:
-                    vm = ", " + instruction[3]
+                vd, vs2 = instruction[1], instruction[2]
+                vm = ", " + instruction[3] if len(instruction) > 3 else ""
                 newline = (
                     "\tvwaddu.vx, {VD}, {VS2}, x0{VM}\n"
                     + "\tvwaddu.vx, {VD}, {VD},  x0{VM}\n"
@@ -279,36 +296,25 @@ def replace_instruction(line, linenum, verbosity):
                 newline = newline.format(VD=vd, VS2=vs2, VM=vm)
 
             case "vsext.vf2":  # sign extend vsext.v vd, vs2, vm
-                vd = instruction[1]
-                vs2 = instruction[2]
-                if len(instruction) <= 3:
-                    vm = ""
-                else:
-                    vm = ", " + instruction[3]
+                vd, vs2 = instruction[1], instruction[2]
+                vm = ", " + instruction[3] if len(instruction) > 3 else ""
                 newline = (
                     "\tvwadd.vx, {VD}, {VS2}, x0{VM}\n"  # signed widening add zero
                 )
                 newline = newline.format(VD=vd, VS2=vs2, VM=vm)
 
             case "vsext.vf4":
-                vd = instruction[1]
-                vs2 = instruction[2]
-                if len(instruction) <= 3:
-                    vm = ""
-                else:
-                    vm = ", " + instruction[3]
+                vd, vs2 = instruction[1], instruction[2]
+                vm = ", " + instruction[3] if len(instruction) > 3 else ""
                 newline = (
                     "\tvwadd.vx, {VD}, {VS2}, x0{VM}\n"
                     + "\tvwadd.vx, {VD}, {VD},  x0{VM}\n"
                 )  # signed widening add zero twice
                 newline = newline.format(VD=vd, VS2=vs2, VM=vm)
+
             case "vsext.vf8":
-                vd = instruction[1]
-                vs2 = instruction[2]
-                if len(instruction) <= 3:
-                    vm = ""
-                else:
-                    vm = ", " + instruction[3]
+                vd, vs2 = instruction[1], instruction[2]
+                vm = ", " + instruction[3] if len(instruction) > 3 else ""
                 newline = (
                     "\tvwadd.vx, {VD}, {VS2}, x0{VM}\n"
                     + "\tvwadd.vx, {VD}, {VD},  x0{VM}\n"
