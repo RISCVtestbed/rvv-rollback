@@ -212,7 +212,7 @@ def replace_instruction(line, linenum, verbosity):
                     LINENUM=linenum, LINE=line
                 )
                 newline += "\tsd     t0, 0(sp)\t  # rvv-rollback\n"
-                newline += f"\taddi   t0, {AVL}, 0 # rvv-rollback\n"
+                newline += f"\taddi   t0, x0, {AVL} # rvv-rollback\n"
                 temp = re.sub(tail_mask_policy, "", line)
                 temp = (
                     temp.replace(f" {AVL},", "t0,")
@@ -226,7 +226,7 @@ def replace_instruction(line, linenum, verbosity):
                 )
                 suggestion += "# Suggestion\n"
                 suggestion += "# Pick unused register e.g. t0\n"
-                suggestion += f"\taddi   t0, {AVL}, 0 \n"
+                suggestion += f"\taddi   t0, x0, {AVL} \n"
                 suggestion += "# " + temp + "\n"
                 newline += suggestion
 
