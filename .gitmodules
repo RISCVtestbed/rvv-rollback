@@ -1,0 +1,3 @@
+[submodule "RAJAPerf"]
+	path = RAJAPerf
+	url = https://github.com/LLNL/RAJAPerf.git
