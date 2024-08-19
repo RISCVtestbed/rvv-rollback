@@ -1,0 +1,7 @@
+a     : 2p0   # Atomic instructions
+f     : 2p0   # Floating-point instructions (single precision)
+d     : 2p0   # Floating-point instructions (double precision)
+m     : 2p0   # Integer multiplication and division
+c     : 2p0   # Compressed instructions
+v     : 0p7   # Vector instructions
+rv64i : 2p0   # A 64 bit integer ISA sufficient to form a compiler target and to support modern operating system environment
