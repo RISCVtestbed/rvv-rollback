@@ -64,3 +64,44 @@ RVV1.0 provides new features that are not available in RVV0.7, and there are ins
 
 
 We do not provide any guarantee that this tool will work, and we also do not guarantee the correctness of the result from using this tool.
+
+
+## RAJAPerf Workflow
+RAJAPerf is a performance benchmark suite that uses RAJA, a C++ library for array-based programming. It contains a number of kernels that can be used to test the performance of a compiler. As Clang only supports RVV 1.0, we can use this workflow to aid the iterative enhancement of the rollback tool as the benchmark suite provides performance and correctness metrics. The workflow is separated into two stages.
+
+### Stage 1: Prepare environment
+First, we need to build Clang for generation of RVV 1.0 assembly, and we also need a GCC toolchain that supports RVV 0.7.1. 
+
+```bash
+$ ./scripts/prepare-env.sh
+```
+
+This builds Clang-18.1.8 and GCC-10.4.
+
+### Stage 2: Compile RAJAPerf
+
+Then, run the following script to compile RAJAPerf.
+
+```bash
+$ ./scripts/build-raja.sh
+```
+
+The script does the following:
+1. Create a RAJAPerf build1 that is built with GCC-10.4.
+2. Create a RAJAPerf build2 that is built with Clang-18.1.8 using the `--save-temps` flag to save the intermediate assembly files.
+3. Use rollback tool on all the `.s` assembly files in build2 to rollback to RVV 0.7.1 (some rollback may fail).
+4. Select the `.s` files that have been successfully rolled back and use GCC-10.4 to compile them to `.o` object files (again, some compilation may fail).
+5. Select the `.o` files that have been successfully compiled and replace the corresponding `.o` files in build1.
+6. Remove all the `.a` static libraries in build1 and rebuild them with the new `.o` files including a mixture of RVV 0.7.1 and rolled back RVV 1.0 object files.
+7. Remove the existing RAJAPerf executable in build1 and rebuild it with the new static libraries.
+
+The final RAJAPerf executable will be located in `./RAJAPerf/build-gcc/bin/raja-perf.exe`.
+
+Several log files are generated in the `./build-logs` directory:
+- `gcc-build.log`: contains the output of the GCC-10.4 build.
+- `llvm-build.log`: contains the output of the Clang-18.1.8 build.
+- `compile.log`: contains the output of the rollback, compilation, and linking stages.
+- `chaged_and_compiled.log`: contains the list of `.s` files that have been successfully rolled back, compiled, and **made changes**.
+- `changed_and_failed.log`: contains the list of `.s` files that have been successfully rolled back, **made changes**, but failed to compile.
+
+> Note: although some kernels have been successfully rolled back and compiled, they may produce `segmentation fault` errors when running the kernel in RAJAPerf. This may due to bugs in the rollback tool where registers accessing value at incorrect addresses which need to be fixed.
