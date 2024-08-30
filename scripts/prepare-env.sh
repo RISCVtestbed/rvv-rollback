@@ -1,18 +1,41 @@
 #!/bin/bash
 
 ROOT_DIR=$(pwd)
-INSTALL_DIR=$ROOT_DIR/riscv-llvm-18-install
 
-# Unpack the Xuantie RVV 0.7.1 toolchain
-cd utils
-tar -xvf Xuantie-900-gcc-linux-6.6.0-glibc-x86_64-V2.10.1-20240712.tar.gz
-cd ..
+#==========================
+# Build Xuantie GCC 10.4
+#==========================
+XUANTIE_GCC_INSTALL_DIR=$ROOT_DIR/xuantie-gnu-install
+XUANTIE_GCC_INSTALL_CONFIG="--enable-linux --with-arch=rv64gcv --with-abi=lp64d"
 
-if [ -n "$1" ]; then
-	INSTALL_DIR=$1
-fi
+# Clone the Xuantie GNU toolchain repository
+git clone --recursive https://github.com/XUANTIE-RV/xuantie-gnu-toolchain.git
 
-INSTALL_CONFIG="--enable-linux --enable-llvm --with-arch=rv64gcv --with-abi=lp64d"
+# Create a directory for the Xuantie GNU toolchain installation
+rm -rf $CLANG_INSTALL_DIR
+mkdir $CLANG_INSTALL_DIR
+
+# Navigate to the Xuantie GNU toolchain directory
+cd xuantie-gnu-toolchain
+
+# Checkout the 2.8.1 release
+git checkout V2.8.1
+
+# Build the Xuantie GNU toolchain
+{
+	make clean
+	./configure --prefix=$XUANTIE_GCC_INSTALL_DIR $XUANTIE_GCC_INSTALL_CONFIG
+	make -j50 linux
+} | tee $XUANTIE_GCC_INSTALL_DIR/build-gcc.log
+
+# Navigate back to the root directory
+cd $ROOT_DIR
+
+#==========================
+# Build Xuantie GCC 10.4
+#==========================
+CLANG_INSTALL_DIR=$ROOT_DIR/riscv-llvm-18-install
+CLANG_INSTALL_CONFIG="--enable-linux --enable-llvm --with-arch=rv64gcv --with-abi=lp64d"
 
 # Clone the RISC-V GNU toolchain repository
 if [ ! -d "riscv-gnu-toolchain" ]; then
@@ -20,31 +43,24 @@ if [ ! -d "riscv-gnu-toolchain" ]; then
 fi
 
 # Create a directory for the RISC-V GNU toolchain installation
-rm -rf $INSTALL_DIR
-mkdir $INSTALL_DIR
+rm -rf $CLANG_INSTALL_DIR
+mkdir $CLANG_INSTALL_DIR
 
 # Navigate to the RISC-V GNU toolchain directory
 cd riscv-gnu-toolchain
 
-if [ -n "$2" ]; then
-	git checkout $2
-fi
+# Checkout the 2024.08.28 release
+git checkout 2024.08.28
 
 # Export installation path to the PATH
-export PATH="$INSTALL_DIR/bin:$PATH"
+export PATH="$CLANG_INSTALL_DIR/bin:$PATH"
 
+# Build the RISC-V GNU toolchain
 {
-	time (
-		# Clean the build directory
-		make clean
-
-		# Configure the installation
-		./configure --prefix="$INSTALL_DIR" $INSTALL_CONFIG
-
-		# Build
-		make -j50 linux
-	)
-} | tee $INSTALL_DIR/build-riscv.log
+	make clean
+	./configure --prefix=$CLANG_INSTALL_DIR $CLANG_INSTALL_CONFIG
+	make -j50 linux
+} | tee $CLANG_INSTALL_DIR/build-riscv.log
 
 # Navigate back to the root directory
 cd $ROOT_DIR
